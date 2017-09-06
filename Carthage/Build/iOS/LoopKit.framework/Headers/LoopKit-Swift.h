@@ -226,6 +226,9 @@ SWIFT_CLASS("_TtC7LoopKit39GlucoseRangeScheduleTableViewController")
 - (BOOL)tableView:(UITableView * _Nonnull)tableView canEditRowAtIndexPath:(NSIndexPath * _Nonnull)indexPath SWIFT_WARN_UNUSED_RESULT;
 - (BOOL)tableView:(UITableView * _Nonnull)tableView canMoveRowAtIndexPath:(NSIndexPath * _Nonnull)indexPath SWIFT_WARN_UNUSED_RESULT;
 - (NSString * _Nullable)tableView:(UITableView * _Nonnull)tableView titleForHeaderInSection:(NSInteger)section SWIFT_WARN_UNUSED_RESULT;
+- (BOOL)tableView:(UITableView * _Nonnull)tableView shouldHighlightRowAtIndexPath:(NSIndexPath * _Nonnull)indexPath SWIFT_WARN_UNUSED_RESULT;
+- (NSIndexPath * _Nullable)tableView:(UITableView * _Nonnull)tableView willSelectRowAtIndexPath:(NSIndexPath * _Nonnull)indexPath SWIFT_WARN_UNUSED_RESULT;
+- (void)tableView:(UITableView * _Nonnull)tableView didSelectRowAtIndexPath:(NSIndexPath * _Nonnull)indexPath;
 - (nonnull instancetype)init OBJC_DESIGNATED_INITIALIZER;
 - (nullable instancetype)initWithCoder:(NSCoder * _Nonnull)aDecoder OBJC_DESIGNATED_INITIALIZER;
 @end
@@ -248,12 +251,6 @@ SWIFT_CLASS("_TtC7LoopKit39GlucoseRangeScheduleTableViewController")
 
 
 @interface HKUnit (SWIFT_EXTENSION(LoopKit))
-+ (HKUnit * _Nonnull)milligramsPerDeciliterUnit SWIFT_WARN_UNUSED_RESULT;
-+ (HKUnit * _Nonnull)millimolesPerLiterUnit SWIFT_WARN_UNUSED_RESULT;
-/// A formatting helper for determining the preferred decimal style for a given unit
-@property (nonatomic, readonly) NSInteger preferredFractionDigits;
-/// A presentation helper for the localized unit string
-@property (nonatomic, readonly, copy) NSString * _Nonnull glucoseUnitDisplayString;
 @end
 
 

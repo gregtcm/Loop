@@ -1,28 +1,27 @@
 {
-  "commitish" : "v1.0.1",
   "iOS" : [
     {
-      "hash" : "d6e49ed8708f71e0f76f33676cc1c8c0704cfa5a961594ceb52b83d2a25a05e2",
+      "hash" : "05b9ed838e574da8dc7d21c055f19f72bff6df942f7fae8aa0b2b3bd9b3b4f30",
       "name" : "Crypto"
     },
     {
-      "hash" : "c7cd694c4dc15f27f3e35a4346b2ace2a511e71156a796b29f97f81755540cbe",
+      "hash" : "a41a812eff1a5cd3d2f97b4183ec8dfa574799ceeee3b5f4d922a4f1f3f922ea",
       "name" : "RileyLinkBLEKit"
     },
     {
-      "hash" : "b0cbf74adea28e71575b84852f8c406aaa5a3ede4ac5a0cf28e5ded6de707e45",
+      "hash" : "e0eab44dd4647b9a1228f675f94620723f8260db0f21c8bb1e50dbd887022500",
       "name" : "NightscoutUploadKit"
     },
     {
-      "hash" : "74ea383e38f8176ff0dd21f5c0c654d1f1552c0347f65aca7a3b5fa12b9002e9",
+      "hash" : "83fff36446aeb4b938ccfc3090ce62f341ac82b05249b15d38af5285a6621ae0",
       "name" : "RileyLinkKit"
     },
     {
-      "hash" : "8dfa6d79013f1a8f3bc42931bc3422628e84cfc4e441ab14793ef32d4b6406e4",
+      "hash" : "ddbcc8e64c52c5087cfb35eff44245abc42f6a67e0526f3efbd26ebe1d72bbb4",
       "name" : "MinimedKit"
     }
   ],
-  "xcodeVersion" : "Xcode 8.3.2\nBuild version 8E2002",
+  "commitish" : "v1.2.1",
   "watchOS" : [
 
   ],

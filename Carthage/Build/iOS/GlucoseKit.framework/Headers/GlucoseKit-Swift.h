@@ -139,6 +139,12 @@ typedef unsigned int swift_uint4  __attribute__((__ext_vector_type__(4)));
 #pragma clang diagnostic ignored "-Wduplicate-method-arg"
 
 @interface HKQuantitySample (SWIFT_EXTENSION(GlucoseKit))
+@property (nonatomic, readonly) BOOL isDisplayOnly;
+@property (nonatomic, readonly, copy) NSString * _Nonnull provenanceIdentifier;
+@end
+
+
+@interface HKUnit (SWIFT_EXTENSION(GlucoseKit))
 @end
 
 #pragma clang diagnostic pop
