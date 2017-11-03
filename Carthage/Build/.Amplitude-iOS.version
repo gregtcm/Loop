@@ -1,18 +1,18 @@
 {
-  "iOS" : [
-    {
-      "hash" : "c83bf45abd5eb79c58f02f715e20cb5dbf3ec10fe446d4c038c59e7d15f62373",
-      "name" : "Amplitude"
-    }
+  "Mac" : [
+
   ],
-  "commitish" : "v3.14.1",
   "watchOS" : [
 
   ],
   "tvOS" : [
 
   ],
-  "Mac" : [
-
+  "commitish" : "v3.14.1",
+  "iOS" : [
+    {
+      "name" : "Amplitude",
+      "hash" : "679042923a98116dd7270d42e3c35ce499bd2020702689c7f162b1b6091aeb11"
+    }
   ]
 }
