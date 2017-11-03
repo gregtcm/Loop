@@ -10,6 +10,7 @@ import HealthKit
 import UIKit
 import CarbKit
 import LoopKit
+import LoopUI
 
 
 final class StatusExtensionDataManager {
@@ -30,7 +31,7 @@ final class StatusExtensionDataManager {
     }
 
     @objc private func update(_ notification: Notification) {
-        self.dataManager.glucoseStore?.preferredUnit() { (unit, error) in
+        self.dataManager.loopManager.glucoseStore.preferredUnit() { (unit, error) in
             if error == nil, let unit = unit {
                 self.createContext(glucoseUnit: unit) { (context) in
                     if let context = context {
@@ -42,14 +43,7 @@ final class StatusExtensionDataManager {
     }
 
     private func createContext(glucoseUnit: HKUnit, _ completionHandler: @escaping (_ context: StatusExtensionContext?) -> Void) {
-        guard let glucoseStore = self.dataManager.glucoseStore else {
-            completionHandler(nil)
-            return
-        }
-        
-        dataManager.loopManager.getLoopStatus {
-            (predictedGlucose, _, recommendedTempBasal, lastTempBasal, lastLoopCompleted, _, _, error) in
-
+        dataManager.loopManager.getLoopState { (manager, state) in
             let dataManager = self.dataManager
             var context = StatusExtensionContext()
         
@@ -62,27 +56,30 @@ final class StatusExtensionDataManager {
                 context.netBasal = NetBasalContext(
                     rate: 2.1,
                     percentage: 0.6,
-                    startDate:
-                    Date(timeIntervalSinceNow: -250)
+                    start:
+                    Date(timeIntervalSinceNow: -250),
+                    end: Date(timeIntervalSinceNow: .minutes(30))
                 )
                 context.predictedGlucose = PredictedGlucoseContext(
                     values: (1...36).map { 89.123 + Double($0 * 5) }, // 3 hours of linear data
-                    unit: HKUnit.milligramsPerDeciliterUnit(),
+                    unit: HKUnit.milligramsPerDeciliter(),
                     startDate: Date(),
                     interval: TimeInterval(minutes: 5))
 
                 let lastLoopCompleted = Date(timeIntervalSinceNow: -TimeInterval(minutes: 0))
             #else
-                guard error == nil else {
+                guard state.error == nil else {
                     // TODO: unclear how to handle the error here properly.
                     completionHandler(nil)
                     return
                 }
+                let lastLoopCompleted = state.lastLoopCompleted
             #endif
 
             context.loop = LoopContext(
-                dosingEnabled: dataManager.loopManager.dosingEnabled,
-                lastCompleted: lastLoopCompleted)
+                dosingEnabled: manager.settings.dosingEnabled,
+                lastCompleted: lastLoopCompleted
+            )
 
             let updateGroup = DispatchGroup()
 
@@ -92,7 +89,7 @@ final class StatusExtensionDataManager {
             let chartEndDate = Date().addingTimeInterval(TimeInterval(hours: 3))
 
             updateGroup.enter()
-            glucoseStore.getCachedGlucoseValues(start: chartStartDate, end: Date()) {
+            manager.glucoseStore.getCachedGlucoseValues(start: chartStartDate, end: Date()) {
                 (values) in
                 context.glucose = values.map({
                     return GlucoseContext(
@@ -101,31 +98,34 @@ final class StatusExtensionDataManager {
                         startDate: $0.startDate
                     )
                 })
-                
-                // Only tranfer the predicted glucose if we have glucose history
-                // Drop the first element in predictedGlucose because it is the currentGlucose
-                // and will have a different interval to the next element
-                if let predictedGlucose = predictedGlucose?.dropFirst(),
-                    predictedGlucose.count > 1 {
-                    let first = predictedGlucose[predictedGlucose.startIndex]
-                    let second = predictedGlucose[predictedGlucose.startIndex.advanced(by: 1)]
-                    context.predictedGlucose = PredictedGlucoseContext(
-                        values: predictedGlucose.map { $0.quantity.doubleValue(for: glucoseUnit) },
-                        unit: glucoseUnit,
-                        startDate: first.startDate,
-                        interval: second.startDate.timeIntervalSince(first.startDate))
-                }
                 updateGroup.leave()
             }
 
-            if let lastNetBasal = dataManager.loopManager.lastNetBasal {
-                context.netBasal = NetBasalContext(
-                    rate: lastNetBasal.rate,
-                    percentage: lastNetBasal.percent,
-                    startDate: lastNetBasal.startDate)
+            // Drop the first element in predictedGlucose because it is the currentGlucose
+            // and will have a different interval to the next element
+            if let predictedGlucose = state.predictedGlucose?.dropFirst(),
+                predictedGlucose.count > 1 {
+                let first = predictedGlucose[predictedGlucose.startIndex]
+                let second = predictedGlucose[predictedGlucose.startIndex.advanced(by: 1)]
+                context.predictedGlucose = PredictedGlucoseContext(
+                    values: predictedGlucose.map { $0.quantity.doubleValue(for: glucoseUnit) },
+                    unit: glucoseUnit,
+                    startDate: first.startDate,
+                    interval: second.startDate.timeIntervalSince(first.startDate))
+            }
+
+            let date = state.lastTempBasal?.startDate ?? Date()
+            if let scheduledBasal = manager.basalRateSchedule?.between(start: date, end: date).first {
+                let netBasal = NetBasal(
+                    lastTempBasal: state.lastTempBasal,
+                    maxBasal: manager.settings.maximumBasalRatePerHour,
+                    scheduledBasal: scheduledBasal
+                )
+
+                context.netBasal = NetBasalContext(rate: netBasal.rate, percentage: netBasal.percent, start: netBasal.start, end: netBasal.end)
             }
             
-            if let reservoir = dataManager.doseStore.lastReservoirValue,
+            if let reservoir = manager.doseStore.lastReservoirValue,
                let capacity = dataManager.pumpState?.pumpModel?.reservoirCapacity {
                 context.reservoir = ReservoirContext(
                     startDate: reservoir.startDate,
@@ -138,22 +138,24 @@ final class StatusExtensionDataManager {
                 context.batteryPercentage = batteryPercentage
             }
         
-            if let targetRanges = self.dataManager.glucoseTargetRangeSchedule {
+            if let targetRanges = manager.settings.glucoseTargetRangeSchedule {
                 context.targetRanges = targetRanges.between(start: chartStartDate, end: chartEndDate)
-                    .map({
+                    .map {
                         return DatedRangeContext(
                             startDate: $0.startDate,
                             endDate: $0.endDate,
                             minValue: $0.value.minValue,
-                            maxValue: $0.value.maxValue)
-                    })
+                            maxValue: $0.value.maxValue
+                        )
+                    }
 
-                if let override = targetRanges.temporaryOverride {
+                if let override = targetRanges.override {
                     context.temporaryOverride = DatedRangeContext(
-                        startDate: override.startDate,
-                        endDate: override.endDate,
+                        startDate: override.start,
+                        endDate: override.end ?? .distantFuture,
                         minValue: override.value.minValue,
-                        maxValue: override.value.maxValue)
+                        maxValue: override.value.maxValue
+                    )
                 }
             }
 
@@ -162,12 +164,13 @@ final class StatusExtensionDataManager {
                     isStateValid: sensorInfo.isStateValid,
                     stateDescription: sensorInfo.stateDescription,
                     trendType: sensorInfo.trendType,
-                    isLocal: sensorInfo.isLocal)
+                    isLocal: sensorInfo.isLocal
+                )
             }
 
-            updateGroup.notify(queue: DispatchQueue.global(qos: .background), execute: {
+            updateGroup.notify(queue: DispatchQueue.global(qos: .background)) {
                 completionHandler(context)
-            })
+            }
         }
     }
 }

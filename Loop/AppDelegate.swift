@@ -23,11 +23,15 @@ final class AppDelegate: UIResponder, UIApplicationDelegate {
 
         NotificationManager.authorize(delegate: self)
 
-        AnalyticsManager.sharedManager.application(application, didFinishLaunchingWithOptions: launchOptions)
+        let bundle = Bundle(for: type(of: self))
+        DiagnosticLogger.shared = DiagnosticLogger(subsystem: bundle.bundleIdentifier!, version: bundle.shortVersionString)
+        DiagnosticLogger.shared?.forCategory("AppDelegate").info(#function)
+
+        AnalyticsManager.shared.application(application, didFinishLaunchingWithOptions: launchOptions)
 
         if  let navVC = window?.rootViewController as? UINavigationController,
             let statusVC = navVC.viewControllers.first as? StatusTableViewController {
-            statusVC.dataManager = deviceManager
+            statusVC.deviceManager = deviceManager
         }
 
         return true
@@ -70,18 +74,14 @@ final class AppDelegate: UIResponder, UIApplicationDelegate {
 extension AppDelegate: UNUserNotificationCenterDelegate {
     func userNotificationCenter(_ center: UNUserNotificationCenter, didReceive response: UNNotificationResponse, withCompletionHandler completionHandler: @escaping () -> Void) {
         switch response.actionIdentifier {
-        case NotificationManager.Action.RetryBolus.rawValue:
-            if  let units = response.notification.request.content.userInfo[NotificationManager.UserInfoKey.BolusAmount.rawValue] as? Double,
-                let startDate = response.notification.request.content.userInfo[NotificationManager.UserInfoKey.BolusStartDate.rawValue] as? Date,
+        case NotificationManager.Action.retryBolus.rawValue:
+            if  let units = response.notification.request.content.userInfo[NotificationManager.UserInfoKey.bolusAmount.rawValue] as? Double,
+                let startDate = response.notification.request.content.userInfo[NotificationManager.UserInfoKey.bolusStartDate.rawValue] as? Date,
                 startDate.timeIntervalSinceNow >= TimeInterval(minutes: -5)
             {
-                AnalyticsManager.sharedManager.didRetryBolus()
+                AnalyticsManager.shared.didRetryBolus()
 
-                deviceManager.enactBolus(units: units) { (error) in
-                    if error != nil {
-                        NotificationManager.sendBolusFailureNotificationForAmount(units, atStartDate: startDate)
-                    }
-
+                deviceManager.enactBolus(units: units, at: startDate) { (_) in
                     completionHandler()
                 }
                 return
