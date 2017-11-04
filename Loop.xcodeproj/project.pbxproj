@@ -2150,13 +2150,8 @@
 				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
 				CLANG_WARN_SUSPICIOUS_MOVES = YES;
 				CODE_SIGN_IDENTITY = "";
-<<<<<<< Updated upstream
-				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "";
-				CURRENT_PROJECT_VERSION = 41;
-=======
 				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "iPhone Developer";
 				CURRENT_PROJECT_VERSION = 37;
->>>>>>> Stashed changes
 				DEFINES_MODULE = YES;
 				DEVELOPMENT_TEAM = 54Q7ZKU5VF;
 				DYLIB_COMPATIBILITY_VERSION = 1;
